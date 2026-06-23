@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, LayoutDashboard, Bell, Calendar, Clock, AlertCircle, ChevronRight, Menu, X, KanbanSquare, CheckSquare } from "lucide-react";
+import { Users, LayoutDashboard, Bell, Calendar, Clock, AlertCircle, ChevronRight, Menu, X, KanbanSquare, CheckSquare, TrendingUp } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -25,9 +25,10 @@ export default function Sidebar() {
   
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // อัปเดตเมนู: เพิ่ม Pipeline และ Tasks
+  // อัปเดตเมนู: เพิ่มหน้า Forecast
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Forecast", href: "/forecast", icon: TrendingUp },
     { name: "Customers", href: "/customers", icon: Users },
   ];
 
@@ -275,4 +276,4 @@ export default function Sidebar() {
       </div>
     </>
   );
-} 
+}
