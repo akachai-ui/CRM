@@ -2,7 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, LayoutDashboard, Bell, Calendar, Clock, AlertCircle, ChevronRight, Menu, X, KanbanSquare, CheckSquare, TrendingUp } from "lucide-react";
+import { 
+  Users, 
+  LayoutDashboard, 
+  Bell, 
+  Calendar, 
+  Clock, 
+  AlertCircle, 
+  ChevronRight, 
+  Menu, 
+  X, 
+  TrendingUp, 
+  Package, 
+  ChevronLeft 
+} from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -20,19 +33,18 @@ export default function Sidebar() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
-  // สร้างตัวแปรสำหรับคุมการเปิด/ปิดเมนูในมือถือ
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // อัปเดตเมนู: เพิ่มหน้า Forecast
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Forecast", href: "/forecast", icon: TrendingUp },
     { name: "Customers", href: "/customers", icon: Users },
+    { name: "Products", href: "/products", icon: Package },
   ];
 
-  // ปิด Sidebar อัตโนมัติเมื่อกดเปลี่ยนหน้า (สำหรับโหมดมือถือ)
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
@@ -67,22 +79,10 @@ export default function Sidebar() {
           const correctFirebaseId = customerIdMap[data.customerId] || data.customerId;
 
           if (!data.nextAppointmentDate || data.nextAppointmentDate === "") {
-             notifs.push({
-               id: doc.id,
-               customerId: correctFirebaseId,
-               customerName: data.customerName || "ไม่ระบุชื่อบริษัท",
-               subject: data.subject || "ประวัติการพูดคุย",
-               nextAppointmentDate: "ไม่มีกำหนด"
-             });
+             notifs.push({ id: doc.id, customerId: correctFirebaseId, customerName: data.customerName || "ไม่ระบุชื่อบริษัท", subject: data.subject || "ประวัติการพูดคุย", nextAppointmentDate: "ไม่มีกำหนด" });
           } 
           else if (data.nextAppointmentDate <= next3DaysStr) {
-             notifs.push({
-               id: doc.id,
-               customerId: correctFirebaseId,
-               customerName: data.customerName || "ไม่ระบุชื่อบริษัท",
-               subject: data.subject || "ประวัติการพูดคุย",
-               nextAppointmentDate: data.nextAppointmentDate
-             });
+             notifs.push({ id: doc.id, customerId: correctFirebaseId, customerName: data.customerName || "ไม่ระบุชื่อบริษัท", subject: data.subject || "ประวัติการพูดคุย", nextAppointmentDate: data.nextAppointmentDate });
           }
         }
       });
@@ -126,14 +126,12 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* 📱 ปุ่มกดเมนูสำหรับมือถือ (ลอยอยู่มุมขวาล่าง เอานิ้วโป้งกดง่ายๆ) */}
+      {/* 📱 ปุ่มกดเมนูสำหรับมือถือ */}
       <button 
         onClick={() => setIsSidebarOpen(true)}
         className="md:hidden fixed bottom-6 right-6 z-40 bg-slate-900 text-white p-4 rounded-full shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] border border-slate-700 hover:scale-105 transition-transform"
       >
         <Menu className="w-6 h-6" />
-        
-        {/* จุดแดงแจ้งเตือนบนปุ่มมือถือ */}
         {notifications.length > 0 && (
           <span className="absolute -top-1 -right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -142,7 +140,7 @@ export default function Sidebar() {
         )}
       </button>
 
-      {/* 📱 ฉากหลังมืดๆ ตอนเปิดเมนูบนมือถือ (กดตรงสีดำเพื่อปิดเมนูได้) */}
+      {/* 📱 ฉากหลังมืดๆ ตอนเปิดเมนูบนมือถือ */}
       {isSidebarOpen && (
         <div 
           className="md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity"
@@ -150,56 +148,75 @@ export default function Sidebar() {
         />
       )}
 
-      {/* 💻 ตัว Sidebar Container */}
+      {/* 💻 ตัว Sidebar Container (✨ เพิ่ม md:sticky เพื่อให้ดันเนื้อหาขยับหลบ) */}
       <div className={`
-        w-64 bg-slate-900 text-slate-300 flex flex-col h-screen fixed left-0 top-0 border-r border-slate-800 shadow-2xl z-50 
-        transition-transform duration-300 ease-in-out
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        bg-slate-900 text-slate-300 flex flex-col h-screen shrink-0 border-r border-slate-800 shadow-2xl z-50 
+        transition-all duration-300 ease-in-out
+        fixed left-0 top-0 md:sticky md:top-0
+        ${isSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"}
+        ${!isSidebarOpen && isCollapsed ? "md:w-20" : "md:w-64"}
       `}>
         
-        <div className="h-20 flex items-center justify-between px-8 border-b border-slate-800 bg-slate-900/50">
-          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 tracking-wider">
-            CRM<span className="text-slate-100">PRO</span>
-          </h1>
-          {/* ปุ่ม X ปิดเมนูบนมือถือ */}
-          <button 
-            onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-slate-500 hover:text-white"
-          >
+        {/* 🌟 Header & Logo */}
+        <div className={`h-20 flex items-center px-4 md:px-0 border-b border-slate-800 bg-slate-900/50 
+          ${(!isSidebarOpen && isCollapsed) ? 'md:justify-center' : 'justify-between md:px-6'}`}>
+          
+          <div className={`${(!isSidebarOpen && isCollapsed) ? 'hidden' : 'block'} flex-1`}>
+            <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 tracking-wider">
+              CRM<span className="text-slate-100">PRO</span>
+            </h1>
+          </div>
+
+          {(!isSidebarOpen && isCollapsed) && (
+            <div className="hidden md:flex w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 items-center justify-center font-black text-white text-lg shadow-lg">
+              CR
+            </div>
+          )}
+
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-500 hover:text-white">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto">
-          <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Main Menu</p>
+        {/* 🌟 Main Menu */}
+        <nav className="flex-1 px-4 py-8 space-y-2">
+          {(!(!isSidebarOpen && isCollapsed)) && (
+            <p className="px-2 text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 transition-opacity">Main Menu</p>
+          )}
           
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
             return (
-              <Link key={item.name} href={item.href}>
-                <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 font-medium ${
-                  isActive 
-                    ? "bg-blue-600/10 text-blue-400 shadow-inner border border-blue-500/20" 
-                    : "hover:bg-slate-800 hover:text-slate-100"
+              <Link key={item.name} href={item.href} className="relative group block">
+                <div className={`flex items-center px-3 py-3 rounded-xl transition-all duration-300 font-medium cursor-pointer 
+                  ${(!isSidebarOpen && isCollapsed) ? "justify-center" : "gap-4"} 
+                  ${isActive ? "bg-blue-600/10 text-blue-400 shadow-inner border border-blue-500/20" : "hover:bg-slate-800 hover:text-slate-100 border border-transparent"}
                 }`}>
-                  <item.icon className={`w-5 h-5 ${isActive ? "text-blue-400" : "text-slate-400"}`} />
-                  {item.name}
+                  <item.icon className={`w-5 h-5 shrink-0 ${isActive ? "text-blue-400" : "text-slate-400"}`} />
+                  {(!(!isSidebarOpen && isCollapsed)) && <span className="whitespace-nowrap transition-opacity">{item.name}</span>}
                 </div>
+
+                {(!isSidebarOpen && isCollapsed) && (
+                  <div className="hidden md:block absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl border border-slate-700">
+                    {item.name}
+                    <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[5px] border-r-slate-800"></div>
+                  </div>
+                )}
               </Link>
             );
           })}
         </nav>
 
+        {/* 🌟 Notification & Dropdown */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/80 relative" ref={dropdownRef}>
-          
           <button 
             onClick={() => {
               fetchNotifications();
               setIsDropdownOpen(!isDropdownOpen);
             }}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-800 transition-colors relative group"
+            className={`w-full flex items-center py-3 rounded-xl hover:bg-slate-800 transition-colors relative group ${(!isSidebarOpen && isCollapsed) ? 'justify-center' : 'justify-between px-4'}`}
           >
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center ${(!isSidebarOpen && isCollapsed) ? 'justify-center' : 'gap-3'}`}>
               <div className="relative">
                 <Bell className={`w-5 h-5 ${notifications.length > 0 ? "text-amber-400 group-hover:animate-wiggle" : "text-slate-400"}`} />
                 {notifications.length > 0 && (
@@ -209,17 +226,23 @@ export default function Sidebar() {
                   </span>
                 )}
               </div>
-              <span className="font-semibold text-slate-200">การแจ้งเตือน</span>
+              {(!(!isSidebarOpen && isCollapsed)) && <span className="font-semibold text-slate-200 whitespace-nowrap">การแจ้งเตือน</span>}
             </div>
-            {notifications.length > 0 && (
-              <span className="bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {notifications.length}
-              </span>
+            
+            {(!(!isSidebarOpen && isCollapsed)) && notifications.length > 0 && (
+              <span className="bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{notifications.length}</span>
+            )}
+            
+            {(!isSidebarOpen && isCollapsed) && (
+              <div className="hidden md:block absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl border border-slate-700">
+                การแจ้งเตือน ({notifications.length})
+                <div className="absolute top-1/2 -left-1 -translate-y-1/2 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[5px] border-r-slate-800"></div>
+              </div>
             )}
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute bottom-full left-4 mb-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
+            <div className="absolute bottom-[110%] left-4 mb-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
               <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800 text-sm">นัดหมายที่ต้องติดตาม</h3>
                 <span className="text-xs font-medium text-slate-500">{notifications.length} รายการ</span>
@@ -242,16 +265,11 @@ export default function Sidebar() {
                         <Link 
                           key={notif.id} 
                           href={`/customers/${notif.customerId}`}
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            setIsSidebarOpen(false); 
-                          }}
+                          onClick={() => { setIsDropdownOpen(false); setIsSidebarOpen(false); }}
                           className="block p-4 hover:bg-blue-50/50 transition-colors group"
                         >
                           <div className="flex justify-between items-start mb-1">
-                            <p className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors line-clamp-1 pr-2">
-                              {notif.customerName}
-                            </p>
+                            <p className="font-bold text-sm text-slate-800 group-hover:text-blue-700 transition-colors line-clamp-1 pr-2">{notif.customerName}</p>
                             <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${status.color}`}>
                               {status.icon} {status.label}
                             </span>
@@ -271,6 +289,17 @@ export default function Sidebar() {
               </div>
             </div>
           )}
+
+          {/* 🌟 ปุ่มลูกศรสำหรับ กาง/หุบ แถบเมนู */}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`hidden md:flex w-full items-center p-3 mt-4 text-slate-500 hover:text-white hover:bg-slate-800 transition-colors border-t border-slate-800/50 rounded-xl
+              ${isCollapsed ? 'justify-center' : 'justify-end'}
+            `}
+          >
+            {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5 mr-2" />}
+            {!isCollapsed && <span className="text-sm font-semibold">ซ่อนเมนู</span>}
+          </button>
         </div>
 
       </div>
